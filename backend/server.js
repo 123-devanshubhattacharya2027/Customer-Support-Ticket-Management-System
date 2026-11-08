@@ -10,7 +10,8 @@ const connectDB = require("./config/db");
 const ticketRoutes = require("./routes/ticketRoutes");
 const replyRoutes = require("./routes/replyRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
-
+const authRoutes = require("./routes/authRoutes");
+const userRoutes = require("./routes/userRoutes");
 // Import Error Middleware
 const {
     notFound,
@@ -39,6 +40,8 @@ app.use(morgan("dev"));
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/replies", replyRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 
 // =====================================
 // TEST API

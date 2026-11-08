@@ -1,52 +1,125 @@
 
 const Ticket = require("../models/Ticket");
+const User = require("../models/User");
 
 const getDashboardStats = async (req, res) => {
     try {
-        const now = Date.now();
-        const twentyFourHours = 24 * 60 * 60 * 1000;
+        const user = req.user;
 
-        const tickets = await Ticket.find();
+        if (!user || !user.role) {
+            return res.status(401).json({
+                success: false,
+                message: "Authentication required"
+            });
+        }
 
-        const totalTickets = tickets.length;
+        // Restrict dashboard data according to the logged-in user's role.
+        let filter = {};
 
-        const openTickets = tickets.filter(
-            ticket => ticket.status === "Open"
-        ).length;
+        if (user.role === "Admin") {
+            // Admin can see all tickets.
+            filter = {};
+        } else if (user.role === "Agent") {
+            // Agent can see only tickets assigned to them.
+            filter.assignedTo = user._id;
+        } else if (user.role === "Customer") {
+            // Customer can see only tickets they created.
+            filter.createdBy = user._id;
+        } else {
+            return res.status(403).json({
+                success: false,
+                message: "Access denied"
+            });
+        }
 
-        const inProgressTickets = tickets.filter(
-            ticket => ticket.status === "In Progress"
-        ).length;
+        const twentyFourHoursAgo = new Date(
+            Date.now() - 24 * 60 * 60 * 1000
+        );
 
-        const resolvedTickets = tickets.filter(
-            ticket => ticket.status === "Resolved"
-        ).length;
+        // Calculate statistics directly in MongoDB.
+        const [
+            totalTickets,
+            openTickets,
+            inProgressTickets,
+            waitingOnCustomerTickets,
+            resolvedTickets,
+            urgentTickets,
+            overdueTickets
+        ] = await Promise.all([
+            Ticket.countDocuments(filter),
 
-        const urgentTickets = tickets.filter(
-            ticket => ticket.priority === "Urgent"
-        ).length;
+            Ticket.countDocuments({
+                ...filter,
+                status: "Open"
+            }),
 
-        const overdueTickets = tickets.filter(ticket =>
-            ticket.status !== "Resolved" &&
-            now - ticket.createdAt.getTime() > twentyFourHours
-        ).length;
+            Ticket.countDocuments({
+                ...filter,
+                status: "In Progress"
+            }),
 
-        res.status(200).json({
+            Ticket.countDocuments({
+                ...filter,
+                status: "Waiting on Customer"
+            }),
+
+            Ticket.countDocuments({
+                ...filter,
+                status: "Resolved"
+            }),
+
+            Ticket.countDocuments({
+                ...filter,
+                priority: "Urgent"
+            }),
+
+            Ticket.countDocuments({
+                ...filter,
+                status: { $ne: "Resolved" },
+                createdAt: { $lt: twentyFourHoursAgo }
+            })
+        ]);
+
+        const data = {
+            totalTickets,
+            openTickets,
+            inProgressTickets,
+            waitingOnCustomerTickets,
+            resolvedTickets,
+            urgentTickets,
+            overdueTickets
+        };
+
+        // Additional system-wide account statistics for Admin.
+        if (user.role === "Admin") {
+            const [totalAgents, totalCustomers] = await Promise.all([
+                User.countDocuments({
+                    role: "Agent",
+                    isActive: true
+                }),
+
+                User.countDocuments({
+                    role: "Customer",
+                    isActive: true
+                })
+            ]);
+
+            data.totalAgents = totalAgents;
+            data.totalCustomers = totalCustomers;
+        }
+
+        return res.status(200).json({
             success: true,
-            data: {
-                totalTickets,
-                openTickets,
-                inProgressTickets,
-                resolvedTickets,
-                urgentTickets,
-                overdueTickets
-            }
+            role: user.role,
+            data
         });
 
     } catch (error) {
-        res.status(500).json({
+        console.error("Dashboard Error:", error);
+
+        return res.status(500).json({
             success: false,
-            message: error.message
+            message: "Failed to fetch dashboard statistics"
         });
     }
 };

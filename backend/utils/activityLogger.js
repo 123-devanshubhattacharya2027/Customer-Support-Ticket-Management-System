@@ -6,7 +6,7 @@ const logActivity = async ({
     action,
     oldValue = null,
     newValue = null,
-    author = "Support Agent"
+    author = "System"
 }) => {
     return await Activity.create({
         ticket: ticketId,

@@ -1,4 +1,3 @@
-
 const express = require("express");
 
 const router = express.Router();
@@ -9,13 +8,18 @@ const {
     getActivities
 } = require("../controllers/replyController");
 
-// Add reply or internal note
+const protect = require("../middleware/authMiddleware");
+
+// Protect every reply and activity endpoint.
+router.use(protect);
+
+// Add public reply or internal note.
 router.post("/:ticketId", addReply);
 
-// Get activity history - keep before generic route
+// Get ticket activity history.
 router.get("/:ticketId/activities", getActivities);
 
-// Get replies and notes
+// Get replies and notes.
 router.get("/:ticketId", getReplies);
 
 module.exports = router;
