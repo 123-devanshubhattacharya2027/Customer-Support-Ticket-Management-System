@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { connectSocket, getSocket } from "../services/socket";
 
 import {
     X,
@@ -41,6 +42,15 @@ const EMPTY_FORM = {
     assignedTo: ""
 };
 
+// Read the authenticated user saved by AuthGate.
+const getStoredUser = () => {
+    try {
+        return JSON.parse(localStorage.getItem("user") || "{}");
+    } catch {
+        return {};
+    }
+};
+
 // Handles common API response structures.
 const getResponseData = (response) => {
     const body = response?.data;
@@ -70,6 +80,15 @@ function TicketDetails({ ticketId, onClose, onUpdated, agents = [] }) {
 
     const [replyContent, setReplyContent] = useState("");
     const [replyType, setReplyType] = useState("Public");
+
+    // REAL-TIME CHAT STATES
+    const [typingUser, setTypingUser] = useState("");
+    const [socketConnected, setSocketConnected] = useState(false);
+
+    const currentUser = getStoredUser();
+    const currentUserRole = currentUser.role || "Customer";
+    const canCreateInternalNotes =
+        currentUserRole === "Admin" || currentUserRole === "Agent";
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -201,6 +220,113 @@ function TicketDetails({ ticketId, onClose, onUpdated, agents = [] }) {
     }, [fetchTicketDetails]);
 
     // =====================================
+    // REAL-TIME TICKET CONVERSATION
+    // =====================================
+
+    useEffect(() => {
+        const socket = connectSocket();
+
+        if (!socket) {
+            setSocketConnected(false);
+            return undefined;
+        }
+
+        const currentUserId = currentUser._id || currentUser.id;
+
+        const handleConnect = () => {
+            setSocketConnected(true);
+            socket.emit("join_ticket", ticketId);
+        };
+
+        const handleDisconnect = () => {
+            setSocketConnected(false);
+            setTypingUser("");
+        };
+
+        const handleNewMessage = (payload) => {
+            if (String(payload?.ticketId) !== String(ticketId) || !payload?.reply) {
+                return;
+            }
+
+            const incomingReply = payload.reply;
+            setReplies((previousReplies) =>
+                previousReplies.some((reply) => reply._id === incomingReply._id)
+                    ? previousReplies
+                    : [...previousReplies, incomingReply]
+            );
+            fetchActivities();
+        };
+
+        const handleInternalNote = (payload) => {
+            if (
+                !canCreateInternalNotes ||
+                String(payload?.ticketId) !== String(ticketId) ||
+                !payload?.reply
+            ) {
+                return;
+            }
+
+            const incomingReply = payload.reply;
+            setReplies((previousReplies) =>
+                previousReplies.some((reply) => reply._id === incomingReply._id)
+                    ? previousReplies
+                    : [...previousReplies, incomingReply]
+            );
+            fetchActivities();
+        };
+
+        
+           const handleUserTyping = (payload) => {
+    console.log("FRONTEND RECEIVED TYPING:", payload);
+    console.log("CURRENT USER ID:", currentUserId);
+    console.log("FRONTEND RECEIVED STOP TYPING:", payload);
+
+    if (
+        String(payload?.ticketId) === String(ticketId) &&
+        String(payload?.userId) !== String(currentUserId)
+    ) {
+        console.log("SHOWING TYPING INDICATOR");
+        setTypingUser(payload.userName || "Someone");
+    }
+};
+        const handleUserStoppedTyping = (payload) => {
+            if (
+                String(payload?.ticketId) === String(ticketId) &&
+                String(payload?.userId) !== String(currentUserId)
+            ) {
+                setTypingUser("");
+            }
+        };
+
+        socket.on("connect", handleConnect);
+        socket.on("disconnect", handleDisconnect);
+        socket.on("new_message", handleNewMessage);
+        socket.on("user_typing", handleUserTyping);
+        socket.on("user_stopped_typing", handleUserStoppedTyping);
+
+        if (canCreateInternalNotes) {
+            socket.on("new_internal_note", handleInternalNote);
+        }
+
+        if (socket.connected) {
+            handleConnect();
+        }
+
+        return () => {
+            if (socket.connected) {
+                socket.emit("leave_ticket", ticketId);
+            }
+
+            socket.off("connect", handleConnect);
+            socket.off("disconnect", handleDisconnect);
+            socket.off("new_message", handleNewMessage);
+            socket.off("new_internal_note", handleInternalNote);
+            socket.off("user_typing", handleUserTyping);
+            socket.off("user_stopped_typing", handleUserStoppedTyping);
+        };
+    }, [ticketId, fetchActivities, canCreateInternalNotes]);
+
+    // =====================================
     // HANDLE INPUT CHANGES
     // =====================================
 
@@ -328,10 +454,20 @@ function TicketDetails({ ticketId, onClose, onUpdated, agents = [] }) {
             return;
         }
 
+        if (replyType === "Internal" && !canCreateInternalNotes) {
+            setError("You do not have permission to add an internal note.");
+            return;
+        }
+
         try {
             setSendingReply(true);
             setError("");
             setSuccess("");
+
+            const activeSocket = getSocket();
+            if (activeSocket?.connected) {
+                activeSocket.emit("typing_stop", ticketId);
+            }
 
             await addReply(ticketId, {
                 content: replyContent.trim(),
@@ -814,16 +950,35 @@ function TicketDetails({ ticketId, onClose, onUpdated, agents = [] }) {
 
                     <div className="mt-8 pt-6 border-t border-slate-200">
 
-                        <div className="flex items-center gap-2 mb-5">
-                            <MessageSquare
-                                className="text-indigo-600"
-                                size={21}
-                            />
+                        <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
+                            <div className="flex items-center gap-2">
+                                <MessageSquare
+                                    className="text-indigo-600"
+                                    size={21}
+                                />
 
-                            <h3 className="text-lg font-bold text-slate-800">
-                                Conversation
-                            </h3>
+                                <h3 className="text-lg font-bold text-slate-800">
+                                    Conversation
+                                </h3>
+                            </div>
+
+                            <span className={`inline-flex items-center gap-2 text-xs font-medium px-3 py-1 rounded-full ${
+                                socketConnected
+                                    ? "bg-green-50 text-green-700"
+                                    : "bg-slate-100 text-slate-500"
+                            }`}>
+                                <span className={`w-2 h-2 rounded-full ${
+                                    socketConnected ? "bg-green-500" : "bg-slate-400"
+                                }`} />
+                                {socketConnected ? "Live connection" : "Connecting..."}
+                            </span>
                         </div>
+
+                        {typingUser && (
+                            <p className="text-xs text-indigo-600 mb-3 animate-pulse">
+                                {typingUser} is typing...
+                            </p>
+                        )}
 
                         {/* REPLIES LIST */}
 
@@ -988,17 +1143,30 @@ function TicketDetails({ ticketId, onClose, onUpdated, agents = [] }) {
                                         Public Reply
                                     </option>
 
-                                    <option value="Internal">
-                                        Internal Note
-                                    </option>
+                                    {canCreateInternalNotes && (
+                                        <option value="Internal">
+                                            Internal Note
+                                        </option>
+                                    )}
                                 </select>
                             </div>
 
                             <textarea
                                 value={replyContent}
-                                onChange={(event) =>
-                                    setReplyContent(event.target.value)
-                                }
+                                onChange={(event) => {
+                                    setReplyContent(event.target.value);
+
+                                    const socket = getSocket();
+                                    if (socket?.connected) {
+                                        socket.emit("typing_start", ticketId);
+                                    }
+                                }}
+                                onBlur={() => {
+                                    const socket = getSocket();
+                                    if (socket?.connected) {
+                                        socket.emit("typing_stop", ticketId);
+                                    }
+                                }}
                                 rows={3}
                                 placeholder="Write your reply or internal note..."
                                 className="w-full border border-slate-300 rounded-lg px-4 py-3 text-slate-800 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-indigo-500 resize-y"

@@ -1,11 +1,13 @@
 
 const express = require("express");
+const http = require("http");
 const dotenv = require("dotenv");
 const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 
 const connectDB = require("./config/db");
+const initializeSocket = require("./socket/socket");
 
 const ticketRoutes = require("./routes/ticketRoutes");
 const replyRoutes = require("./routes/replyRoutes");
@@ -13,7 +15,7 @@ const dashboardRoutes = require("./routes/dashboardRoutes");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
-// Import Error Middleware
+
 const {
     notFound,
     errorHandler
@@ -24,6 +26,9 @@ dotenv.config();
 
 // Initialize Express
 const app = express();
+
+// Create HTTP server
+const server = http.createServer(app);
 
 // =====================================
 // GLOBAL MIDDLEWARE
@@ -37,17 +42,18 @@ app.use(morgan("dev"));
 // =====================================
 // API ROUTES
 // =====================================
-// =====================================
-// API ROUTES
-// =====================================
 
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/replies", replyRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
-app.use("/api/attachments", require("./routes/attachmentRoutes"));
+app.use(
+    "/api/attachments",
+    require("./routes/attachmentRoutes")
+);
 app.use("/api/notifications", notificationRoutes);
+
 // =====================================
 // TEST API
 // =====================================
@@ -60,14 +66,10 @@ app.get("/", (req, res) => {
 });
 
 // =====================================
-// ERROR HANDLING MIDDLEWARE
-// IMPORTANT: Keep these after all routes
+// ERROR HANDLING
 // =====================================
 
-// Handle undefined routes (404)
 app.use(notFound);
-
-// Handle all application errors
 app.use(errorHandler);
 
 // =====================================
@@ -84,10 +86,18 @@ const startServer = async () => {
     try {
         await connectDB();
 
-        app.listen(PORT, () => {
+        // Initialize Socket.IO
+        const io = initializeSocket(server);
+
+        // Make Socket.IO available to controllers
+        app.set("io", io);
+
+        server.listen(PORT, () => {
             console.log(
                 `Server running at http://localhost:${PORT}`
             );
+
+            console.log("Socket.IO initialized successfully");
         });
 
     } catch (error) {
@@ -101,4 +111,3 @@ const startServer = async () => {
 };
 
 startServer();
-

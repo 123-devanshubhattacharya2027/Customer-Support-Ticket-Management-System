@@ -1,3 +1,4 @@
+
 const mongoose = require("mongoose");
 
 const Reply = require("../models/Reply");
@@ -110,7 +111,7 @@ const addReply = async (req, res) => {
             });
         }
 
-        // Only Admin, Agent and Customer roles are supported.
+        // Only supported roles can submit replies.
         if (!["Admin", "Agent", "Customer"].includes(user.role)) {
             return res.status(403).json({
                 success: false,
@@ -120,9 +121,10 @@ const addReply = async (req, res) => {
 
         const replyType = type || "Public";
 
-        // Never trust the author supplied by the frontend.
+        // Never trust author supplied by frontend.
         const replyAuthor = user.name;
 
+        // 1. Save message in MongoDB.
         const reply = await Reply.create({
             ticket: ticket._id,
             content: content.trim(),
@@ -130,11 +132,11 @@ const addReply = async (req, res) => {
             author: replyAuthor
         });
 
-        // Update ticket timestamp.
+        // 2. Update ticket timestamp.
         ticket.updatedAt = new Date();
         await ticket.save();
 
-        // Record activity.
+        // 3. Record activity.
         await logActivity({
             ticketId: ticket._id,
             action: replyType === "Internal"
@@ -144,6 +146,29 @@ const addReply = async (req, res) => {
             author: replyAuthor
         });
 
+        // 4. Broadcast only after persistence.
+        const io = req.app.get("io");
+
+        if (io) {
+            const canonicalTicketId = ticket._id.toString();
+
+            const eventPayload = {
+                ticketId: canonicalTicketId,
+                reply: reply.toObject()
+            };
+
+            if (replyType === "Internal") {
+                // Internal notes go to staff only.
+                io.to(`ticket:${canonicalTicketId}:staff`)
+                    .emit("new_internal_note", eventPayload);
+            } else {
+                // Public replies go to all authorized participants.
+                io.to(`ticket:${canonicalTicketId}`)
+                    .emit("new_message", eventPayload);
+            }
+        }
+
+        // 5. Return existing REST response.
         return res.status(201).json({
             success: true,
             message: "Reply added successfully.",

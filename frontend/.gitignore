@@ -1,33 +1,18 @@
-<<<<<<< HEAD
 # Dependencies
 node_modules/
 
-# Environment variables
-=======
-
 # Environment variables and secrets
->>>>>>> 2723f4fccb417bf1804c23f3855ce9887cb77b56
 .env
 .env.*
 !.env.example
 
-<<<<<<< HEAD
-# Build files
-dist/
-build/
-
-# Logs
-=======
-# Dependencies
-node_modules/
-
 # Build output
 dist/
 dist-ssr/
+build/
 
 # Logs
 logs/
->>>>>>> 2723f4fccb417bf1804c23f3855ce9887cb77b56
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -40,11 +25,7 @@ pnpm-debug.log*
 
 # Uploaded files
 uploads/
-<<<<<<< HEAD
 
 # Postman workspace data
 .postman/
 postman/
-
-=======
->>>>>>> 2723f4fccb417bf1804c23f3855ce9887cb77b56
