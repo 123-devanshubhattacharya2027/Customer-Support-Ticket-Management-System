@@ -15,7 +15,9 @@ import {
     Send,
     Lock,
     Globe,
-    History
+    History,
+    Upload,
+    Download
 } from "lucide-react";
 
 import {
@@ -23,7 +25,10 @@ import {
     updateTicket,
     getReplies,
     addReply,
-    getActivities
+    getActivities,
+    getTicketAttachments,
+    uploadAttachments,
+    downloadAttachment
 } from "../services/api";
 
 const EMPTY_FORM = {
@@ -57,6 +62,11 @@ function TicketDetails({ ticketId, onClose, onUpdated, agents = [] }) {
 
     const [replies, setReplies] = useState([]);
     const [activities, setActivities] = useState([]);
+
+    // ATTACHMENT STATES
+    const [attachments, setAttachments] = useState([]);
+    const [loadingAttachments, setLoadingAttachments] = useState(false);
+    const [uploading, setUploading] = useState(false);
 
     const [replyContent, setReplyContent] = useState("");
     const [replyType, setReplyType] = useState("Public");
@@ -103,6 +113,27 @@ function TicketDetails({ ticketId, onClose, onUpdated, agents = [] }) {
     }, [ticketId]);
 
     // =====================================
+    // FETCH TICKET ATTACHMENTS
+    // =====================================
+
+    const fetchAttachments = useCallback(async () => {
+        try {
+            setLoadingAttachments(true);
+            const response = await getTicketAttachments(ticketId);
+            setAttachments(
+                Array.isArray(response.data?.attachments)
+                    ? response.data.attachments
+                    : []
+            );
+        } catch (err) {
+            console.error("Attachment fetching error:", err);
+            setAttachments([]);
+        } finally {
+            setLoadingAttachments(false);
+        }
+    }, [ticketId]);
+
+    // =====================================
     // FETCH TICKET DETAILS
     // =====================================
 
@@ -143,7 +174,8 @@ function TicketDetails({ ticketId, onClose, onUpdated, agents = [] }) {
 
             await Promise.all([
                 fetchReplies(),
-                fetchActivities()
+                fetchActivities(),
+                fetchAttachments()
             ]);
 
         } catch (err) {
@@ -158,7 +190,7 @@ function TicketDetails({ ticketId, onClose, onUpdated, agents = [] }) {
         } finally {
             setLoading(false);
         }
-    }, [ticketId, fetchReplies, fetchActivities]);
+    }, [ticketId, fetchReplies, fetchActivities, fetchAttachments]);
 
     // =====================================
     // LOAD DETAILS WHEN MODAL OPENS
@@ -335,6 +367,102 @@ function TicketDetails({ ticketId, onClose, onUpdated, agents = [] }) {
 
         } finally {
             setSendingReply(false);
+        }
+    };
+
+    // =====================================
+    // UPLOAD TICKET ATTACHMENTS
+    // =====================================
+
+    const handleUploadAttachments = async (event) => {
+        const files = Array.from(event.target.files || []);
+        if (files.length === 0) return;
+
+        setError("");
+        setSuccess("");
+
+        const allowedTypes = [
+            "image/jpeg",
+            "image/png",
+            "application/pdf",
+            "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "text/plain"
+        ];
+
+        if (files.length > 5) {
+            setError("You can upload a maximum of 5 files at once.");
+            event.target.value = "";
+            return;
+        }
+
+        const invalidFile = files.find((file) => !allowedTypes.includes(file.type));
+        if (invalidFile) {
+            setError(`Unsupported file type: ${invalidFile.name}`);
+            event.target.value = "";
+            return;
+        }
+
+        const oversizedFile = files.find((file) => file.size > 5 * 1024 * 1024);
+        if (oversizedFile) {
+            setError(`${oversizedFile.name} exceeds the 5 MB limit.`);
+            event.target.value = "";
+            return;
+        }
+
+        try {
+            setUploading(true);
+            await uploadAttachments(ticketId, files);
+            await fetchAttachments();
+            setSuccess("Attachments uploaded successfully!");
+        } catch (err) {
+            console.error("Attachment upload error:", err);
+            setError(
+                err.response?.data?.message ||
+                "Unable to upload attachments. Please try again."
+            );
+        } finally {
+            setUploading(false);
+            event.target.value = "";
+        }
+    };
+
+    // =====================================
+    // DOWNLOAD TICKET ATTACHMENT
+    // =====================================
+
+    const handleDownloadAttachment = async (attachment) => {
+        try {
+            setError("");
+            setSuccess("");
+
+            const response = await downloadAttachment(
+                ticketId,
+                attachment._id
+            );
+
+            const blob = new Blob([response.data], {
+                type: attachment.mimeType || "application/octet-stream"
+            });
+
+            const blobUrl = window.URL.createObjectURL(blob);
+            const link = document.createElement("a");
+
+            link.href = blobUrl;
+            link.download = attachment.originalName || "attachment";
+
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+
+            window.URL.revokeObjectURL(blobUrl);
+        } catch (err) {
+            console.error("Attachment download error:", err);
+
+            setError(
+                err.response?.data?.message ||
+                "Unable to download attachment. Please try again."
+            );
         }
     };
 
@@ -758,6 +886,83 @@ function TicketDetails({ ticketId, onClose, onUpdated, agents = [] }) {
                                 ))
                             )}
 
+                        </div>
+
+                        {/* ATTACHMENT SECTION */}
+                        <div className="mb-6 p-4 border border-slate-200 rounded-xl bg-slate-50">
+                            <div className="flex items-center gap-2 mb-3">
+                                <FileText size={20} className="text-indigo-600" />
+                                <h3 className="font-semibold text-slate-800">Ticket Attachments</h3>
+                                <span className="text-xs text-slate-500">({attachments.length})</span>
+                            </div>
+
+                            {/* UPLOAD ATTACHMENTS */}
+                            <div className="mb-4 p-4 bg-white border border-dashed border-indigo-300 rounded-lg">
+                                <label className="flex flex-col items-center cursor-pointer">
+                                    <Upload size={28} className="text-indigo-600 mb-2" />
+                                    <span className="text-sm font-semibold text-slate-700">
+                                        {uploading ? "Uploading files..." : "Choose files to upload"}
+                                    </span>
+                                    <span className="text-xs text-slate-500 mt-1">
+                                        Maximum 5 files, 5 MB each
+                                    </span>
+                                    <span className="text-xs text-slate-500">
+                                        JPG, PNG, PDF, DOC, DOCX and TXT
+                                    </span>
+                                    <input
+                                        type="file"
+                                        multiple
+                                        accept=".jpg,.jpeg,.png,.pdf,.doc,.docx,.txt"
+                                        className="hidden"
+                                        disabled={uploading}
+                                        onChange={handleUploadAttachments}
+                                    />
+                                </label>
+
+                                {uploading && (
+                                    <div className="flex items-center justify-center gap-2 mt-3 text-sm text-indigo-600">
+                                        <Loader2 size={16} className="animate-spin" />
+                                        Uploading...
+                                    </div>
+                                )}
+                            </div>
+
+                            {loadingAttachments ? (
+                                <div className="flex items-center gap-2 text-sm text-slate-500">
+                                    <Loader2 size={16} className="animate-spin" />
+                                    Loading attachments...
+                                </div>
+                            ) : attachments.length === 0 ? (
+                                <p className="text-sm text-slate-500">No attachments available.</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {attachments.map((attachment) => (
+                                        <div
+                                            key={attachment._id}
+                                            className="flex items-center gap-3 p-3 bg-white border border-slate-200 rounded-lg"
+                                        >
+                                            <FileText size={18} className="text-indigo-600 shrink-0" />
+                                            <div className="min-w-0 flex-1">
+                                                <p className="text-sm font-medium text-slate-800 truncate">
+                                                    {attachment.originalName}
+                                                </p>
+                                                <p className="text-xs text-slate-500">
+                                                    {(attachment.size / 1024).toFixed(1)} KB
+                                                </p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDownloadAttachment(attachment)}
+                                                className="flex items-center gap-2 px-3 py-2 rounded-lg text-indigo-600 hover:bg-indigo-50 text-sm font-semibold shrink-0"
+                                                title={`Download ${attachment.originalName}`}
+                                            >
+                                                <Download size={17} />
+                                                <span>Download</span>
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
 
                         {/* ADD REPLY FORM */}

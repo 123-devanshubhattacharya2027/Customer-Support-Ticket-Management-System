@@ -2,6 +2,7 @@
 const mongoose = require("mongoose");
 const Ticket = require("../models/Ticket");
 const User = require("../models/User");
+const Notification = require("../models/Notification");
 const logActivity = require("../utils/activityLogger");
 
 // Helper: Check whether the current user can access a ticket
@@ -97,6 +98,32 @@ const createTicket = async (req, res) => {
             newValue: ticket.subject,
             author: user.name
         });
+
+        // Send notification to all Admin users.
+        // Notification failure should not affect ticket creation.
+        try {
+            const admins = await User.find({
+                role: "Admin"
+            }).select("_id");
+
+            if (admins.length > 0) {
+                const notifications = admins.map((admin) => ({
+                    recipient: admin._id,
+                    sender: user._id,
+                    type: "TICKET_CREATED",
+                    title: "New Ticket Created",
+                    message: `${user.name} created a new ticket: ${ticket.subject}`,
+                    ticket: ticket._id
+                }));
+
+                await Notification.insertMany(notifications);
+            }
+        } catch (notificationError) {
+            console.error(
+                "Ticket created, but Admin notification failed:",
+                notificationError.message
+            );
+        }
 
         return res.status(201).json({
             success: true,
@@ -386,6 +413,62 @@ const updateTicket = async (req, res) => {
                     author: user.name
                 });
             }
+        }
+
+        // Notify the newly assigned Agent.
+        
+// Notify Customer when ticket status changes.
+try {
+    const statusChange = changes.find(
+        (change) => change.field === "status"
+    );
+
+    if (statusChange && ticket.createdBy) {
+        await Notification.create({
+            recipient: ticket.createdBy,
+            sender: user._id,
+            type: "TICKET_STATUS_CHANGED",
+            title: "Ticket Status Updated",
+            message: `Your ticket "${ticket.subject}" status changed from ${statusChange.oldValue} to ${statusChange.newValue}.`,
+            ticket: ticket._id
+        });
+    }
+} catch (notificationError) {
+    console.error(
+        "Ticket updated, but Customer status notification failed:",
+        notificationError.message
+    );
+}
+
+        // Only send when assignedTo actually changes to a valid Agent.
+        try {
+            const assignmentChange = changes.find(
+                (change) => change.field === "assignedTo"
+            );
+
+            if (assignmentChange && assignmentChange.newValue) {
+                const assignedAgent = await User.findOne({
+                    _id: assignmentChange.newValue,
+                    role: "Agent",
+                    isActive: true
+                }).select("_id name");
+
+                if (assignedAgent) {
+                    await Notification.create({
+                        recipient: assignedAgent._id,
+                        sender: user._id,
+                        type: "TICKET_ASSIGNED",
+                        title: "New Ticket Assigned",
+                        message: `You have been assigned a ticket: ${ticket.subject}`,
+                        ticket: ticket._id
+                    });
+                }
+            }
+        } catch (notificationError) {
+            console.error(
+                "Ticket updated, but Agent assignment notification failed:",
+                notificationError.message
+            );
         }
 
         return res.status(200).json({

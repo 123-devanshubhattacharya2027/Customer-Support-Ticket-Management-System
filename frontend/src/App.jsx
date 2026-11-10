@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
     LayoutDashboard,
@@ -34,6 +33,7 @@ import {
 
 import CreateTicket from "./pages/CreateTicket";
 import TicketDetails from "./pages/TicketDetails";
+import NotificationCenter from "./components/NotificationCenter";
 import "./App.css";
 
 const EMPTY_STATS = {
@@ -85,6 +85,7 @@ function App({ user, onLogout, onProfileUpdated }) {
     const [error, setError] = useState("");
 
     const [showCreateForm, setShowCreateForm] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
     const [selectedTicketId, setSelectedTicketId] = useState(null);
 
     // Settings
@@ -98,24 +99,24 @@ function App({ user, onLogout, onProfileUpdated }) {
     const [settingsMessage, setSettingsMessage] = useState("");
     const [settingsMessageType, setSettingsMessageType] = useState("success");
     const [savingSettings, setSavingSettings] = useState(false);
-    
-// =====================================
-// AGENT MANAGEMENT STATES
-// =====================================
 
-const [agents, setAgents] = useState([]);
-const [agentsLoading, setAgentsLoading] = useState(false);
-const [agentsError, setAgentsError] = useState("");
-const [agentMessage, setAgentMessage] = useState("");
+    // =====================================
+    // AGENT MANAGEMENT STATES
+    // =====================================
 
-const [agentForm, setAgentForm] = useState({
-    name: "",
-    email: "",
-    password: ""
-});
+    const [agents, setAgents] = useState([]);
+    const [agentsLoading, setAgentsLoading] = useState(false);
+    const [agentsError, setAgentsError] = useState("");
+    const [agentMessage, setAgentMessage] = useState("");
 
-const [agentSaving, setAgentSaving] = useState(false);
-const [updatingAgentId, setUpdatingAgentId] = useState(null);
+    const [agentForm, setAgentForm] = useState({
+        name: "",
+        email: "",
+        password: ""
+    });
+
+    const [agentSaving, setAgentSaving] = useState(false);
+    const [updatingAgentId, setUpdatingAgentId] = useState(null);
 
     // Synchronize form with authenticated user
     useEffect(() => {
@@ -187,141 +188,135 @@ const [updatingAgentId, setUpdatingAgentId] = useState(null);
             setSavingSettings(false);
         }
     };
-    
-// =====================================
-// FETCH AGENTS
-// =====================================
 
-const fetchAgents = useCallback(async () => {
-    if (role !== "Admin") return;
+    // =====================================
+    // FETCH AGENTS
+    // =====================================
 
-    try {
-        setAgentsLoading(true);
-        setAgentsError("");
+    const fetchAgents = useCallback(async () => {
+        if (role !== "Admin") return;
 
-        const response = await getAgents();
+        try {
+            setAgentsLoading(true);
+            setAgentsError("");
 
-        setAgents(response.data?.data || []);
+            const response = await getAgents();
 
-    } catch (error) {
-        console.error("Fetch agents error:", error);
+            setAgents(response.data?.data || []);
 
-        setAgentsError(
-            error.response?.data?.message ||
-            "Unable to load Agents."
-        );
+        } catch (error) {
+            console.error("Fetch agents error:", error);
 
-    } finally {
-        setAgentsLoading(false);
-    }
-}, [role]);
+            setAgentsError(
+                error.response?.data?.message ||
+                "Unable to load Agents."
+            );
 
+        } finally {
+            setAgentsLoading(false);
+        }
+    }, [role]);
 
-// =====================================
-// CREATE AGENT
-// =====================================
+    // =====================================
+    // CREATE AGENT
+    // =====================================
 
-const handleCreateAgent = async (e) => {
-    e.preventDefault();
+    const handleCreateAgent = async (e) => {
+        e.preventDefault();
 
-    setAgentMessage("");
-    setAgentsError("");
-
-    const name = agentForm.name.trim();
-    const email = agentForm.email.trim().toLowerCase();
-    const password = agentForm.password;
-
-    if (!name || !email || !password) {
-        setAgentsError("Please complete all Agent details.");
-        return;
-    }
-
-    try {
-        setAgentSaving(true);
-
-        const response = await createAgent({
-            name,
-            email,
-            password
-        });
-
-        setAgentMessage(
-            response.data?.message || "Agent created successfully."
-        );
-
-        setAgentForm({
-            name: "",
-            email: "",
-            password: ""
-        });
-
-        await fetchAgents();
-
-        await fetchDashboard();
-
-    } catch (error) {
-        console.error("Create agent error:", error);
-
-        setAgentsError(
-            error.response?.data?.message ||
-            "Unable to create Agent."
-        );
-
-    } finally {
-        setAgentSaving(false);
-    }
-};
-
-
-// =====================================
-// ACTIVATE / DEACTIVATE AGENT
-// =====================================
-
-const handleAgentStatusChange = async (agent) => {
-    try {
-        setUpdatingAgentId(agent._id);
-        setAgentsError("");
         setAgentMessage("");
+        setAgentsError("");
 
-        const newStatus = !agent.isActive;
+        const name = agentForm.name.trim();
+        const email = agentForm.email.trim().toLowerCase();
+        const password = agentForm.password;
 
-        const response = await updateAgentStatus(
-            agent._id,
-            newStatus
-        );
+        if (!name || !email || !password) {
+            setAgentsError("Please complete all Agent details.");
+            return;
+        }
 
-        setAgentMessage(
-            response.data?.message || "Agent status updated."
-        );
+        try {
+            setAgentSaving(true);
 
-        await fetchAgents();
+            const response = await createAgent({
+                name,
+                email,
+                password
+            });
 
-        await fetchDashboard();
+            setAgentMessage(
+                response.data?.message || "Agent created successfully."
+            );
 
-    } catch (error) {
-        console.error("Agent status update error:", error);
+            setAgentForm({
+                name: "",
+                email: "",
+                password: ""
+            });
 
-        setAgentsError(
-            error.response?.data?.message ||
-            "Unable to update Agent status."
-        );
+            await fetchAgents();
+            await fetchDashboard();
 
-    } finally {
-        setUpdatingAgentId(null);
-    }
-};
+        } catch (error) {
+            console.error("Create agent error:", error);
 
+            setAgentsError(
+                error.response?.data?.message ||
+                "Unable to create Agent."
+            );
 
-// =====================================
-// LOAD AGENTS WHEN PAGE OPENS
-// =====================================
+        } finally {
+            setAgentSaving(false);
+        }
+    };
 
-useEffect(() => {
-    if (role === "Admin") {
-        fetchAgents();
-    }
-}, [role, fetchAgents]);
+    // =====================================
+    // ACTIVATE / DEACTIVATE AGENT
+    // =====================================
 
+    const handleAgentStatusChange = async (agent) => {
+        try {
+            setUpdatingAgentId(agent._id);
+            setAgentsError("");
+            setAgentMessage("");
+
+            const newStatus = !agent.isActive;
+
+            const response = await updateAgentStatus(
+                agent._id,
+                newStatus
+            );
+
+            setAgentMessage(
+                response.data?.message || "Agent status updated."
+            );
+
+            await fetchAgents();
+            await fetchDashboard();
+
+        } catch (error) {
+            console.error("Agent status update error:", error);
+
+            setAgentsError(
+                error.response?.data?.message ||
+                "Unable to update Agent status."
+            );
+
+        } finally {
+            setUpdatingAgentId(null);
+        }
+    };
+
+    // =====================================
+    // LOAD AGENTS WHEN PAGE OPENS
+    // =====================================
+
+    useEffect(() => {
+        if (role === "Admin") {
+            fetchAgents();
+        }
+    }, [role, fetchAgents]);
 
     // =====================================
     // FETCH DASHBOARD
@@ -421,8 +416,7 @@ useEffect(() => {
             fetchTickets()
         ]);
     };
-
-    // =====================================
+        // =====================================
     // NAVIGATION
     // =====================================
 
@@ -661,18 +655,21 @@ useEffect(() => {
     // =====================================
     // PAGE INFORMATION
     // =====================================
+
     const pageTitles = {
-    dashboard: "Dashboard",
-    tickets: role === "Customer" ? "My Tickets" : "All Tickets",
-    customers: "Customers",
-    agents: "Agent Management",
-    conversations: "Conversations",
-    settings: "Settings"
-};
+        dashboard: "Nexora Workspace",
+        tickets: role === "Customer" ? "My Tickets" : "All Tickets",
+        customers: "Customers",
+        agents: "Agent Management",
+        conversations: "Conversations",
+        notifications: "Notifications",
+        settings: "Settings"
+    };
+
     const pageDescriptions = {
         dashboard:
             role === "Admin"
-                ? "Monitor your complete support operation."
+                ? "Every Query. One Intelligent Solution.."
                 : role === "Agent"
                     ? "Monitor your assigned tickets and workload."
                     : "Track your support requests and their progress.",
@@ -685,6 +682,7 @@ useEffect(() => {
         customers: "View customers who submitted support requests.",
         agents: "Create, manage and monitor your support team.",
         conversations: "View customer replies and ticket conversations.",
+        notifications: "Stay updated on ticket activity and important changes.",
         settings: "Manage your account preferences."
     };
 
@@ -718,19 +716,25 @@ useEffect(() => {
             label: "Conversations",
             icon: MessageSquare,
             roles: ["Admin", "Agent", "Customer"]
+        },
+        {
+            id: "notifications",
+            label: "Notifications",
+            icon: Bell,
+            roles: ["Admin", "Agent", "Customer"]
         }
     ];
-   
+
     const navItems = allNavItems.filter(item =>
         item.roles.includes(role)
     );
-  
+
     // =====================================
     // MAIN UI
     // =====================================
 
     return (
-        <div className="app-shell min-h-screen flex">
+        <div className={`app-shell app-role-${String(role).toLowerCase()} min-h-screen flex`}>
 
             {/* SIDEBAR */}
 
@@ -745,7 +749,7 @@ useEffect(() => {
 
                         <div>
                             <h1 className="text-xl font-bold">
-                                SupportDesk
+                                Nexora
                             </h1>
 
                             <p className="text-xs text-slate-400">
@@ -830,7 +834,7 @@ useEffect(() => {
 
                     <button
                         type="button"
-                        onClick={onLogout}
+                        onClick={() => setShowLogoutModal(true)}
                         className="w-full flex items-center gap-3 p-3 rounded-lg text-red-300 hover:bg-red-500/10 hover:text-red-200 transition"
                     >
                         <LogOut size={18} />
@@ -915,7 +919,7 @@ useEffect(() => {
 
                             {/* HERO SECTION */}
 
-                            <section className="dashboard-hero relative overflow-hidden rounded-3xl p-7 md:p-9">
+                            <section className="dashboard-hero role-hero relative overflow-hidden rounded-3xl p-7 md:p-9">
                                 <div className="hero-orb hero-orb-one" />
                                 <div className="hero-orb hero-orb-two" />
 
@@ -1058,8 +1062,7 @@ useEffect(() => {
 
                         </div>
                     )}
-
-                    {/* ALL TICKETS PAGE */}
+                            {/* ALL TICKETS PAGE */}
 
                     {activePage === "tickets" && (
 
@@ -1174,340 +1177,327 @@ useEffect(() => {
                         </div>
 
                     )}
-                    
-{/* =====================================
-    AGENT MANAGEMENT PAGE
-===================================== */}
 
-{activePage === "agents" && role === "Admin" && (
+                    {/* =====================================
+                        AGENT MANAGEMENT PAGE
+                    ===================================== */}
 
-    <div className="space-y-8">
+                    {activePage === "agents" && role === "Admin" && (
 
-        {/* PAGE HEADER */}
+                        <div className="space-y-8">
 
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            {/* PAGE HEADER */}
 
-            <div>
-                <h3 className="text-xl font-bold text-white">
-                    Manage Support Agents
-                </h3>
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 
-                <p className="text-sm text-slate-400 mt-1">
-                    Create accounts and manage your support team.
-                </p>
-            </div>
+                                <div>
+                                    <h3 className="text-xl font-bold text-white">
+                                        Manage Support Agents
+                                    </h3>
 
-            <div className="glass-card px-5 py-3">
-                <p className="text-xs text-slate-400">
-                    Total Agents
-                </p>
-
-                <p className="text-2xl font-bold text-white">
-                    {agents.length}
-                </p>
-            </div>
-
-        </div>
-
-
-        {/* SUCCESS MESSAGE */}
-
-        {agentMessage && (
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-400/20 text-emerald-300 text-sm">
-                {agentMessage}
-            </div>
-        )}
-
-
-        {/* ERROR MESSAGE */}
-
-        {agentsError && (
-            <div className="p-4 rounded-xl bg-red-500/10 border border-red-400/20 text-red-300 text-sm">
-                {agentsError}
-            </div>
-        )}
-
-
-        {/* CREATE AGENT FORM */}
-
-        <div className="glass-card p-6 md:p-7">
-
-            <div className="flex items-center gap-3 mb-6">
-
-                <div className="p-3 rounded-xl bg-cyan-400/10 text-cyan-300">
-                    <UserPlus size={22} />
-                </div>
-
-                <div>
-                    <h3 className="text-lg font-bold text-white">
-                        Create New Agent
-                    </h3>
-
-                    <p className="text-sm text-slate-400">
-                        Add a new member to your support team.
-                    </p>
-                </div>
-
-            </div>
-
-
-            <form
-                onSubmit={handleCreateAgent}
-                className="grid grid-cols-1 md:grid-cols-2 gap-5"
-            >
-
-                {/* AGENT NAME */}
-
-                <div>
-                    <label className="block text-sm font-semibold text-slate-200 mb-2">
-                        Agent Name
-                    </label>
-
-                    <input
-                        type="text"
-                        value={agentForm.name}
-                        onChange={(e) =>
-                            setAgentForm({
-                                ...agentForm,
-                                name: e.target.value
-                            })
-                        }
-                        placeholder="Enter agent name"
-                        maxLength={100}
-                        required
-                        className="glass-input w-full px-4 py-3"
-                    />
-                </div>
-
-
-                {/* AGENT EMAIL */}
-
-                <div>
-                    <label className="block text-sm font-semibold text-slate-200 mb-2">
-                        Email Address
-                    </label>
-
-                    <div className="relative">
-                        <Mail
-                            size={17}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-                        />
-
-                        <input
-                            type="email"
-                            value={agentForm.email}
-                            onChange={(e) =>
-                                setAgentForm({
-                                    ...agentForm,
-                                    email: e.target.value
-                                })
-                            }
-                            placeholder="agent@example.com"
-                            required
-                            className="glass-input w-full pl-10 pr-4 py-3"
-                        />
-                    </div>
-                </div>
-
-
-                {/* PASSWORD */}
-
-                <div>
-                    <label className="block text-sm font-semibold text-slate-200 mb-2">
-                        Temporary Password
-                    </label>
-
-                    <input
-                        type="password"
-                        value={agentForm.password}
-                        onChange={(e) =>
-                            setAgentForm({
-                                ...agentForm,
-                                password: e.target.value
-                            })
-                        }
-                        placeholder="Minimum 8 characters"
-                        minLength={8}
-                        required
-                        className="glass-input w-full px-4 py-3"
-                    />
-                </div>
-
-
-                {/* CREATE BUTTON */}
-
-                <div className="flex items-end">
-
-                    <button
-                        type="submit"
-                        disabled={agentSaving}
-                        className="btn-primary w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold disabled:opacity-50"
-                    >
-                        <UserPlus size={18} />
-
-                        {agentSaving
-                            ? "Creating Agent..."
-                            : "Create Agent"}
-                    </button>
-
-                </div>
-
-            </form>
-
-        </div>
-
-
-        {/* AGENT DIRECTORY */}
-
-        <div className="glass-card overflow-hidden">
-
-            <div className="p-6 border-b border-slate-700/60">
-
-                <h3 className="text-lg font-bold text-white">
-                    Agent Directory
-                </h3>
-
-                <p className="text-sm text-slate-400 mt-1">
-                    View agent accounts, workload and account status.
-                </p>
-
-            </div>
-
-
-            {agentsLoading ? (
-
-                <div className="p-10 text-center text-slate-400">
-                    Loading agents...
-                </div>
-
-            ) : agents.length === 0 ? (
-
-                <div className="p-10 text-center">
-
-                    <Users
-                        size={35}
-                        className="mx-auto text-slate-500 mb-3"
-                    />
-
-                    <p className="text-slate-300 font-semibold">
-                        No agents found.
-                    </p>
-
-                    <p className="text-sm text-slate-500 mt-1">
-                        Create your first agent using the form above.
-                    </p>
-
-                </div>
-
-            ) : (
-
-                <div className="divide-y divide-slate-700/50">
-
-                    {agents.map((agent) => (
-
-                        <div
-                            key={agent._id}
-                            className="p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-5"
-                        >
-
-                            {/* AGENT DETAILS */}
-
-                            <div className="flex items-center gap-4 min-w-0">
-
-                                <div className="w-12 h-12 shrink-0 rounded-full bg-gradient-to-br from-cyan-400/20 to-violet-500/30 border border-cyan-300/20 text-cyan-200 flex items-center justify-center font-bold text-lg">
-                                    {(agent.name || "A")
-                                        .charAt(0)
-                                        .toUpperCase()}
+                                    <p className="text-sm text-slate-400 mt-1">
+                                        Create accounts and manage your support team.
+                                    </p>
                                 </div>
 
-                                <div className="min-w-0">
-
-                                    <h4 className="font-semibold text-white truncate">
-                                        {agent.name}
-                                    </h4>
-
-                                    <p className="text-sm text-slate-400 truncate">
-                                        {agent.email}
+                                <div className="glass-card px-5 py-3">
+                                    <p className="text-xs text-slate-400">
+                                        Total Agents
                                     </p>
 
-                                    <p className="text-xs text-slate-500 mt-1">
-                                        Support Agent
+                                    <p className="text-2xl font-bold text-white">
+                                        {agents.length}
                                     </p>
-
                                 </div>
 
                             </div>
 
+                            {/* SUCCESS MESSAGE */}
 
-                            {/* AGENT STATISTICS AND STATUS */}
+                            {agentMessage && (
+                                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-400/20 text-emerald-300 text-sm">
+                                    {agentMessage}
+                                </div>
+                            )}
 
-                            <div className="flex flex-wrap items-center gap-4">
+                            {/* ERROR MESSAGE */}
 
-                                <div className="text-sm">
-                                    <p className="text-slate-400">
-                                        Assigned Tickets
-                                    </p>
+                            {agentsError && (
+                                <div className="p-4 rounded-xl bg-red-500/10 border border-red-400/20 text-red-300 text-sm">
+                                    {agentsError}
+                                </div>
+                            )}
 
-                                    <p className="text-lg font-bold text-white">
-                                        {agent.assignedTickets ?? 0}
-                                    </p>
+                            {/* CREATE AGENT FORM */}
+
+                            <div className="glass-card p-6 md:p-7">
+
+                                <div className="flex items-center gap-3 mb-6">
+
+                                    <div className="p-3 rounded-xl bg-cyan-400/10 text-cyan-300">
+                                        <UserPlus size={22} />
+                                    </div>
+
+                                    <div>
+                                        <h3 className="text-lg font-bold text-white">
+                                            Create New Agent
+                                        </h3>
+
+                                        <p className="text-sm text-slate-400">
+                                            Add a new member to your support team.
+                                        </p>
+                                    </div>
+
                                 </div>
 
-
-                                <span
-                                    className={`text-xs px-3 py-1.5 rounded-full font-semibold ${
-                                        agent.isActive
-                                            ? "bg-emerald-500/10 text-emerald-300"
-                                            : "bg-red-500/10 text-red-300"
-                                    }`}
+                                <form
+                                    onSubmit={handleCreateAgent}
+                                    className="grid grid-cols-1 md:grid-cols-2 gap-5"
                                 >
-                                    {agent.isActive
-                                        ? "Active"
-                                        : "Inactive"}
-                                </span>
 
+                                    {/* AGENT NAME */}
 
-                                {/* ACTIVATE / DEACTIVATE */}
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-200 mb-2">
+                                            Agent Name
+                                        </label>
 
-                                <button
-                                    type="button"
-                                    onClick={() =>
-                                        handleAgentStatusChange(agent)
-                                    }
-                                    disabled={
-                                        updatingAgentId === agent._id
-                                    }
-                                    className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition disabled:opacity-50 ${
-                                        agent.isActive
-                                            ? "bg-red-500/10 text-red-300 hover:bg-red-500/20"
-                                            : "bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
-                                    }`}
-                                >
-                                    <Power size={16} />
+                                        <input
+                                            type="text"
+                                            value={agentForm.name}
+                                            onChange={(e) =>
+                                                setAgentForm({
+                                                    ...agentForm,
+                                                    name: e.target.value
+                                                })
+                                            }
+                                            placeholder="Enter agent name"
+                                            maxLength={100}
+                                            required
+                                            className="glass-input w-full px-4 py-3"
+                                        />
+                                    </div>
 
-                                    {updatingAgentId === agent._id
-                                        ? "Updating..."
-                                        : agent.isActive
-                                            ? "Deactivate"
-                                            : "Activate"}
-                                </button>
+                                    {/* AGENT EMAIL */}
+
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-200 mb-2">
+                                            Email Address
+                                        </label>
+
+                                        <div className="relative">
+                                            <Mail
+                                                size={17}
+                                                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
+                                            />
+
+                                            <input
+                                                type="email"
+                                                value={agentForm.email}
+                                                onChange={(e) =>
+                                                    setAgentForm({
+                                                        ...agentForm,
+                                                        email: e.target.value
+                                                    })
+                                                }
+                                                placeholder="agent@example.com"
+                                                required
+                                                className="glass-input w-full pl-10 pr-4 py-3"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* PASSWORD */}
+
+                                    <div>
+                                        <label className="block text-sm font-semibold text-slate-200 mb-2">
+                                            Temporary Password
+                                        </label>
+
+                                        <input
+                                            type="password"
+                                            value={agentForm.password}
+                                            onChange={(e) =>
+                                                setAgentForm({
+                                                    ...agentForm,
+                                                    password: e.target.value
+                                                })
+                                            }
+                                            placeholder="Minimum 8 characters"
+                                            minLength={8}
+                                            required
+                                            className="glass-input w-full px-4 py-3"
+                                        />
+                                    </div>
+
+                                    {/* CREATE BUTTON */}
+
+                                    <div className="flex items-end">
+
+                                        <button
+                                            type="submit"
+                                            disabled={agentSaving}
+                                            className="btn-primary w-full md:w-auto flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold disabled:opacity-50"
+                                        >
+                                            <UserPlus size={18} />
+
+                                            {agentSaving
+                                                ? "Creating Agent..."
+                                                : "Create Agent"}
+                                        </button>
+
+                                    </div>
+
+                                </form>
+
+                            </div>
+
+                            {/* AGENT DIRECTORY */}
+
+                            <div className="glass-card overflow-hidden">
+
+                                <div className="p-6 border-b border-slate-700/60">
+
+                                    <h3 className="text-lg font-bold text-white">
+                                        Agent Directory
+                                    </h3>
+
+                                    <p className="text-sm text-slate-400 mt-1">
+                                        View agent accounts, workload and account status.
+                                    </p>
+
+                                </div>
+
+                                {agentsLoading ? (
+
+                                    <div className="p-10 text-center text-slate-400">
+                                        Loading agents...
+                                    </div>
+
+                                ) : agents.length === 0 ? (
+
+                                    <div className="p-10 text-center">
+
+                                        <Users
+                                            size={35}
+                                            className="mx-auto text-slate-500 mb-3"
+                                        />
+
+                                        <p className="text-slate-300 font-semibold">
+                                            No agents found.
+                                        </p>
+
+                                        <p className="text-sm text-slate-500 mt-1">
+                                            Create your first agent using the form above.
+                                        </p>
+
+                                    </div>
+
+                                ) : (
+
+                                    <div className="divide-y divide-slate-700/50">
+
+                                        {agents.map((agent) => (
+
+                                            <div
+                                                key={agent._id}
+                                                className="p-5 flex flex-col lg:flex-row lg:items-center justify-between gap-5"
+                                            >
+
+                                                {/* AGENT DETAILS */}
+
+                                                <div className="flex items-center gap-4 min-w-0">
+
+                                                    <div className="w-12 h-12 shrink-0 rounded-full bg-gradient-to-br from-cyan-400/20 to-violet-500/30 border border-cyan-300/20 text-cyan-200 flex items-center justify-center font-bold text-lg">
+                                                        {(agent.name || "A")
+                                                            .charAt(0)
+                                                            .toUpperCase()}
+                                                    </div>
+
+                                                    <div className="min-w-0">
+
+                                                        <h4 className="font-semibold text-white truncate">
+                                                            {agent.name}
+                                                        </h4>
+
+                                                        <p className="text-sm text-slate-400 truncate">
+                                                            {agent.email}
+                                                        </p>
+
+                                                        <p className="text-xs text-slate-500 mt-1">
+                                                            Support Agent
+                                                        </p>
+
+                                                    </div>
+
+                                                </div>
+
+                                                {/* AGENT STATISTICS AND STATUS */}
+
+                                                <div className="flex flex-wrap items-center gap-4">
+
+                                                    <div className="text-sm">
+                                                        <p className="text-slate-400">
+                                                            Assigned Tickets
+                                                        </p>
+
+                                                        <p className="text-lg font-bold text-white">
+                                                            {agent.assignedTickets ?? 0}
+                                                        </p>
+                                                    </div>
+
+                                                    <span
+                                                        className={`text-xs px-3 py-1.5 rounded-full font-semibold ${
+                                                            agent.isActive
+                                                                ? "bg-emerald-500/10 text-emerald-300"
+                                                                : "bg-red-500/10 text-red-300"
+                                                        }`}
+                                                    >
+                                                        {agent.isActive
+                                                            ? "Active"
+                                                            : "Inactive"}
+                                                    </span>
+
+                                                    {/* ACTIVATE / DEACTIVATE */}
+
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            handleAgentStatusChange(agent)
+                                                        }
+                                                        disabled={
+                                                            updatingAgentId === agent._id
+                                                        }
+                                                        className={`flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold transition disabled:opacity-50 ${
+                                                            agent.isActive
+                                                                ? "bg-red-500/10 text-red-300 hover:bg-red-500/20"
+                                                                : "bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20"
+                                                        }`}
+                                                    >
+                                                        <Power size={16} />
+
+                                                        {updatingAgentId === agent._id
+                                                            ? "Updating..."
+                                                            : agent.isActive
+                                                                ? "Deactivate"
+                                                                : "Activate"}
+                                                    </button>
+
+                                                </div>
+
+                                            </div>
+
+                                        ))}
+
+                                    </div>
+
+                                )}
 
                             </div>
 
                         </div>
 
-                    ))}
-
-                </div>
-
-            )}
-
-        </div>
-
-    </div>
-
-)}
-
+                    )}
 
                     {/* CONVERSATIONS PAGE */}
 
@@ -1579,6 +1569,11 @@ useEffect(() => {
                         </div>
 
                     )}
+                                        {/* NOTIFICATIONS PAGE */}
+
+                    {activePage === "notifications" && (
+                        <NotificationCenter />
+                    )}
 
                     {/* SETTINGS PAGE */}
 
@@ -1609,7 +1604,8 @@ useEffect(() => {
                                 className="space-y-5"
                             >
 
-                                {/* Display Name */}
+                                {/* DISPLAY NAME */}
+
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-200 mb-2">
                                         Display Name
@@ -1626,7 +1622,8 @@ useEffect(() => {
                                     />
                                 </div>
 
-                                {/* Email */}
+                                {/* EMAIL */}
+
                                 <div>
                                     <label className="block text-sm font-semibold text-slate-200 mb-2">
                                         Display Email
@@ -1642,7 +1639,8 @@ useEffect(() => {
                                     />
                                 </div>
 
-                                {/* Notifications */}
+                                {/* NOTIFICATIONS */}
+
                                 <div className="flex items-center justify-between border border-slate-700/60 rounded-lg p-4">
 
                                     <div>
@@ -1666,14 +1664,18 @@ useEffect(() => {
 
                                 </div>
 
-                                {/* Save */}
+                                {/* SAVE */}
+
                                 <button
                                     type="submit"
                                     disabled={savingSettings}
                                     className="btn-primary flex items-center gap-2 px-5 py-3 rounded-xl font-semibold disabled:opacity-50"
                                 >
                                     <Save size={18} />
-                                    {savingSettings ? "Saving..." : "Save Settings"}
+
+                                    {savingSettings
+                                        ? "Saving..."
+                                        : "Save Settings"}
                                 </button>
 
                             </form>
@@ -1706,10 +1708,49 @@ useEffect(() => {
                 />
             )}
 
+            {/* LOGOUT CONFIRMATION MODAL */}
+            {showLogoutModal && (
+                <div
+                    className="logout-overlay"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-labelledby="logout-modal-title"
+                >
+                    <div className="logout-modal">
+                        <div className="logout-modal-icon">
+                            <LogOut size={25} />
+                        </div>
+
+                        <h2 id="logout-modal-title">Confirm Logout</h2>
+
+                        <p>
+                            Are you sure you want to log out of your Nexora account?
+                        </p>
+
+                        <div className="logout-modal-actions">
+                            <button
+                                type="button"
+                                onClick={() => setShowLogoutModal(false)}
+                                className="logout-cancel-btn"
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={onLogout}
+                                className="logout-confirm-btn"
+                            >
+                                Yes, Logout
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
         </div>
     );
 }
-
 // =====================================
 // TICKET LIST COMPONENT
 // =====================================
@@ -1784,6 +1825,8 @@ function TicketList({
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
 
+                        {/* STATUS FILTER */}
+
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
@@ -1799,6 +1842,8 @@ function TicketList({
                             <option value="Overdue">Overdue</option>
                         </select>
 
+                        {/* PRIORITY FILTER */}
+
                         <select
                             value={priorityFilter}
                             onChange={(e) => setPriorityFilter(e.target.value)}
@@ -1811,6 +1856,8 @@ function TicketList({
                             <option value="Urgent">Urgent</option>
                         </select>
 
+                        {/* AGENT FILTER */}
+
                         {role === "Admin" && (
                             <select
                                 value={assigneeFilter}
@@ -1819,6 +1866,7 @@ function TicketList({
                             >
                                 <option value="">All Agents</option>
                                 <option value="Unassigned">Unassigned</option>
+
                                 {agents
                                     .filter((agent) => agent.isActive)
                                     .map((agent) => (
@@ -1828,6 +1876,8 @@ function TicketList({
                                     ))}
                             </select>
                         )}
+
+                        {/* SORT FILTER */}
 
                         <select
                             value={sort}
@@ -1872,6 +1922,8 @@ function TicketList({
                                 className="hover:bg-cyan-400/5 cursor-pointer transition"
                             >
 
+                                {/* TICKET */}
+
                                 <td className="px-5 py-4">
 
                                     <p className="font-semibold text-white max-w-xs truncate">
@@ -1884,6 +1936,8 @@ function TicketList({
 
                                 </td>
 
+                                {/* CUSTOMER */}
+
                                 <td className="px-5 py-4">
 
                                     <p className="text-sm font-medium text-slate-200">
@@ -1895,6 +1949,8 @@ function TicketList({
                                     </p>
 
                                 </td>
+
+                                {/* STATUS */}
 
                                 <td className="px-5 py-4">
 
@@ -1912,6 +1968,8 @@ function TicketList({
 
                                 </td>
 
+                                {/* PRIORITY */}
+
                                 <td className="px-5 py-4">
 
                                     <span
@@ -1922,9 +1980,13 @@ function TicketList({
 
                                 </td>
 
+                                {/* ASSIGNEE */}
+
                                 <td className="px-5 py-4 text-sm text-slate-300">
                                     {ticket.assignee || "Unassigned"}
                                 </td>
+
+                                {/* UPDATED DATE */}
 
                                 <td className="px-5 py-4 text-sm text-slate-400 whitespace-nowrap">
                                     {ticket.updatedAt
@@ -1936,6 +1998,8 @@ function TicketList({
 
                         ))}
 
+                        {/* EMPTY STATE */}
+
                         {!loading && tickets.length === 0 && (
                             <tr>
                                 <td
@@ -1946,6 +2010,8 @@ function TicketList({
                                 </td>
                             </tr>
                         )}
+
+                        {/* LOADING STATE */}
 
                         {loading && tickets.length === 0 && (
                             <tr>

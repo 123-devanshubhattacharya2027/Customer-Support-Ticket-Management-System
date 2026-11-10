@@ -12,6 +12,7 @@ const replyRoutes = require("./routes/replyRoutes");
 const dashboardRoutes = require("./routes/dashboardRoutes");
 const authRoutes = require("./routes/authRoutes");
 const userRoutes = require("./routes/userRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 // Import Error Middleware
 const {
     notFound,
@@ -36,13 +37,17 @@ app.use(morgan("dev"));
 // =====================================
 // API ROUTES
 // =====================================
+// =====================================
+// API ROUTES
+// =====================================
 
 app.use("/api/tickets", ticketRoutes);
 app.use("/api/replies", replyRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
-
+app.use("/api/attachments", require("./routes/attachmentRoutes"));
+app.use("/api/notifications", notificationRoutes);
 // =====================================
 // TEST API
 // =====================================

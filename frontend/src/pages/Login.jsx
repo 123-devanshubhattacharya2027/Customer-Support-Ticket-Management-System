@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 
 import {
@@ -173,17 +174,40 @@ function Login({ onLogin }) {
 
     return (
 
-        <div className="min-h-screen flex items-center justify-center p-5 bg-[#07111f] relative overflow-hidden">
+        <div
+            className="min-h-screen flex items-center justify-center p-5 relative overflow-hidden transition-all duration-500"
+            style={{
+                backgroundImage: `
+                    linear-gradient(
+                        rgba(3, 10, 25, 0.38),
+                        rgba(3, 10, 25, 0.58)
+                    ),
+                    url("${mode === "register"
+                        ? "/signup-bg.png"
+                        : "/signin-bg.png"}")
+                `,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+                backgroundRepeat: "no-repeat",
+                backgroundAttachment: "fixed"
+            }}
+        >
 
             {/* BACKGROUND EFFECTS */}
 
-            <div className="absolute w-80 h-80 bg-cyan-400/10 rounded-full blur-[100px] -top-20 -left-20" />
+            <div className="absolute w-80 h-80 bg-cyan-400/10 rounded-full blur-[100px] -top-20 -left-20 pointer-events-none" />
 
-            <div className="absolute w-80 h-80 bg-violet-500/10 rounded-full blur-[100px] -bottom-20 -right-20" />
+            <div className="absolute w-80 h-80 bg-violet-500/10 rounded-full blur-[100px] -bottom-20 -right-20 pointer-events-none" />
 
             {/* AUTHENTICATION CARD */}
 
-            <div className="relative w-full max-w-md bg-slate-900/90 border border-slate-700 rounded-3xl p-8 shadow-2xl">
+            <div
+                className={`relative z-10 w-full max-w-md backdrop-blur-xl rounded-3xl p-8 shadow-2xl border transition-all duration-500 ${
+                    mode === "register"
+                        ? "bg-slate-950/75 border-cyan-400/50 shadow-cyan-500/20"
+                        : "bg-slate-950/75 border-cyan-400/40 shadow-blue-500/20"
+                }`}
+            >
 
                 {/* HEADER */}
 
@@ -199,14 +223,14 @@ function Login({ onLogin }) {
                     </div>
 
                     <h1 className="text-3xl font-bold text-white mt-5">
-                        SupportDesk
+                        NEXORA
                     </h1>
 
                     <p className="text-slate-400 mt-2">
 
                         {mode === "login"
-                            ? "Sign in to manage your support workspace."
-                            : "Create your customer support account."}
+                            ? "Welcome Back to Nexora"
+                            : "Join Nexora."}
 
                     </p>
 

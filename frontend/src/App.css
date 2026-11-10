@@ -1,4 +1,3 @@
-
 /* =====================================================
    SUPPORTDESK — PREMIUM GLASSMORPHISM DESIGN
    Theme: Midnight Navy + Cyan + Electric Violet
@@ -448,6 +447,9 @@ button:disabled {
     background: transparent;
     border: 0;
     text-align: left;
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease;
 }
 
 .conversation-row:hover {
@@ -707,5 +709,771 @@ button:disabled {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+    }
+}
+
+/* =====================================================
+   SUPPORTDESK ROLE DASHBOARDS
+   ADMIN / AGENT / CUSTOMER
+===================================================== */
+
+/* =========================
+   ROLE COLOR VARIABLES
+========================= */
+
+.app-role-admin {
+    --role-accent: #24e4d0;
+    --role-accent-rgb: 36, 228, 208;
+    --role-secondary: #8c7bff;
+}
+
+.app-role-agent {
+    --role-accent: #55a8ff;
+    --role-accent-rgb: 85, 168, 255;
+    --role-secondary: #24e4d0;
+}
+
+.app-role-customer {
+    --role-accent: #a78bfa;
+    --role-accent-rgb: 167, 139, 250;
+    --role-secondary: #38d9cf;
+}
+
+/* =========================
+   ROLE-SPECIFIC APP SHELL
+========================= */
+
+.app-shell {
+    position: relative;
+    isolation: isolate;
+    background-color: #061222;
+    background-image:
+        linear-gradient(
+            115deg,
+            rgba(3, 12, 25, 0.90),
+            rgba(4, 15, 31, 0.72) 52%,
+            rgba(4, 12, 27, 0.88)
+        ),
+        url("/supportdesk-office-bg.png");
+    background-position: center;
+    background-size: cover;
+    background-attachment: fixed;
+    background-repeat: no-repeat;
+}
+
+.app-sidebar,
+.app-main {
+    position: relative;
+    z-index: 1;
+}
+
+/* =========================
+   SIDEBAR AND HEADER
+========================= */
+
+.app-sidebar {
+    background: rgba(3, 12, 26, 0.91) !important;
+}
+
+.app-header {
+    background: rgba(4, 14, 29, 0.78) !important;
+}
+
+/* =========================
+   ROLE GLASS CARDS
+========================= */
+
+.glass-card,
+.role-stat-card {
+    background: linear-gradient(
+        135deg,
+        rgba(12, 31, 53, 0.88),
+        rgba(5, 18, 34, 0.88)
+    );
+    border-color: rgba(var(--role-accent-rgb), 0.24);
+}
+
+/* =========================
+   DASHBOARD HERO
+========================= */
+
+.dashboard-hero.role-hero {
+    min-height: 235px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+
+    background:
+        linear-gradient(
+            100deg,
+            rgba(3, 15, 31, 0.95),
+            rgba(5, 28, 48, 0.77) 55%,
+            rgba(22, 24, 58, 0.58)
+        ),
+        url("/supportdesk-office-bg.png") center 48% / cover;
+
+    border: 1px solid rgba(var(--role-accent-rgb), 0.48);
+
+    box-shadow:
+        0 18px 55px rgba(0, 0, 0, 0.28),
+        inset 0 1px rgba(255, 255, 255, 0.08);
+}
+
+/* Agent hero */
+
+.app-role-agent .dashboard-hero.role-hero {
+    background-image:
+        linear-gradient(
+            100deg,
+            rgba(3, 15, 31, 0.96),
+            rgba(8, 35, 65, 0.80) 55%,
+            rgba(5, 48, 61, 0.60)
+        ),
+        url("/supportdesk-office-bg.png");
+
+    background-position: center 32%;
+}
+
+/* Customer hero */
+
+.app-role-customer .dashboard-hero.role-hero {
+    background-image:
+        linear-gradient(
+            100deg,
+            rgba(15, 11, 38, 0.96),
+            rgba(34, 24, 69, 0.80) 55%,
+            rgba(5, 43, 56, 0.60)
+        ),
+        url("/supportdesk-office-bg.png");
+
+    background-position: center 65%;
+}
+
+/* =========================
+   HERO CONTENT
+========================= */
+
+.hero-copy {
+    max-width: 720px;
+}
+
+.hero-live-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+
+    border: 1px solid rgba(var(--role-accent-rgb), 0.35);
+    border-radius: 999px;
+
+    padding: 7px 12px;
+
+    color: var(--role-accent);
+    background: rgba(var(--role-accent-rgb), 0.10);
+
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+}
+
+.hero-side-note {
+    min-width: 230px;
+    padding: 20px;
+
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 16px;
+
+    background: rgba(3, 12, 25, 0.68);
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+}
+
+.hero-gradient-text {
+    background: linear-gradient(
+        100deg,
+        var(--role-accent),
+        var(--role-secondary)
+    );
+
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+/* =========================
+   ROLE STATISTICS GRID
+========================= */
+
+.dashboard-stat-grid .role-stat-card {
+    min-height: 112px;
+    border-radius: 18px;
+
+    transition:
+        transform 0.25s ease,
+        border-color 0.25s ease,
+        box-shadow 0.25s ease;
+}
+
+.dashboard-stat-grid .role-stat-card:hover {
+    transform: translateY(-3px);
+
+    border-color: rgba(var(--role-accent-rgb), 0.58);
+
+    box-shadow:
+        0 16px 35px rgba(0, 0, 0, 0.28),
+        0 0 22px rgba(var(--role-accent-rgb), 0.10);
+}
+
+/* =========================
+   ROLE STAT ICONS
+========================= */
+
+.role-stat-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    color: var(--role-accent);
+
+    background: rgba(var(--role-accent-rgb), 0.12);
+
+    border: 1px solid rgba(var(--role-accent-rgb), 0.32);
+
+    box-shadow: 0 0 22px rgba(var(--role-accent-rgb), 0.12);
+}
+
+.role-stat-1 .role-stat-icon {
+    color: #b69aff;
+    background: rgba(139, 92, 246, 0.14);
+    border-color: rgba(167, 139, 250, 0.34);
+}
+
+.role-stat-2 .role-stat-icon {
+    color: #fbbf24;
+    background: rgba(245, 158, 11, 0.12);
+    border-color: rgba(251, 191, 36, 0.32);
+}
+
+.role-stat-3 .role-stat-icon {
+    color: #2dd4bf;
+    background: rgba(45, 212, 191, 0.12);
+    border-color: rgba(45, 212, 191, 0.32);
+}
+
+/* =========================
+   DASHBOARD INSIGHTS
+========================= */
+
+.dashboard-insight-grid > .glass-card {
+    min-height: 225px;
+}
+
+.insight-icon {
+    width: 40px;
+    height: 40px;
+
+    display: grid;
+    place-items: center;
+
+    border-radius: 13px;
+
+    color: var(--role-accent);
+
+    background: rgba(var(--role-accent-rgb), 0.12);
+
+    border: 1px solid rgba(var(--role-accent-rgb), 0.25);
+}
+
+/* =========================
+   STATUS DISTRIBUTION
+========================= */
+
+.status-stack {
+    display: flex;
+    overflow: hidden;
+
+    height: 13px;
+
+    border-radius: 999px;
+
+    background: rgba(255, 255, 255, 0.08);
+
+    gap: 2px;
+}
+
+.status-stack span {
+    min-width: 0;
+    transition: width 0.3s ease;
+}
+
+.status-legend-dot {
+    width: 8px;
+    height: 8px;
+
+    flex: none;
+
+    border-radius: 50%;
+}
+
+/* =========================
+   HEALTH STATUS
+========================= */
+
+.health-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 7px 10px;
+
+    border: 1px solid rgba(45, 212, 191, 0.22);
+    border-radius: 999px;
+
+    background: rgba(45, 212, 191, 0.08);
+
+    color: #99f6e4;
+
+    font-size: 12px;
+}
+
+/* =========================
+   INSIGHT TILES
+========================= */
+
+.insight-tile {
+    min-height: 105px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+
+    gap: 6px;
+
+    padding: 16px;
+
+    border: 1px solid rgba(var(--role-accent-rgb), 0.18);
+    border-radius: 15px;
+
+    background: rgba(5, 18, 34, 0.62);
+
+    color: var(--role-accent);
+}
+
+.insight-tile span {
+    color: #9fb2ca;
+    font-size: 12px;
+}
+
+.insight-tile strong {
+    color: #f8fbff;
+    font-size: 25px;
+    line-height: 1.1;
+}
+
+.insight-tile.insight-warning {
+    color: #fbbf24;
+    border-color: rgba(251, 191, 36, 0.22);
+}
+
+/* =========================
+   PROGRESS BARS
+========================= */
+
+.progress-track {
+    height: 8px;
+    overflow: hidden;
+
+    border-radius: 999px;
+
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.progress-track span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+}
+
+/* =========================
+   DASHBOARD LINKS
+========================= */
+
+.dashboard-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+
+    color: var(--role-accent);
+
+    font-size: 13px;
+    font-weight: 700;
+
+    transition: gap 0.2s ease;
+}
+
+.dashboard-link:hover {
+    gap: 11px;
+}
+
+/* =========================
+   CUSTOMER DASHBOARD NOTE
+========================= */
+
+.dashboard-customer-note {
+    border-color: rgba(167, 139, 250, 0.28);
+
+    background: linear-gradient(
+        110deg,
+        rgba(34, 24, 69, 0.78),
+        rgba(5, 30, 48, 0.78)
+    );
+}
+
+/* =========================
+   DASHBOARD TICKET PANEL
+========================= */
+
+.dashboard-ticket-panel {
+    border-radius: 17px;
+}
+
+.dashboard-ticket-panel .glass-table thead {
+    background: rgba(20, 43, 68, 0.88);
+}
+
+.dashboard-ticket-panel .glass-table tbody tr {
+    background: rgba(4, 17, 32, 0.20);
+}
+
+/* =========================
+   AGENT SIDEBAR ACTIVE STATE
+========================= */
+
+.app-role-agent .app-sidebar button[aria-current="page"],
+.app-role-agent .app-sidebar button.active {
+    background: linear-gradient(
+        110deg,
+        rgba(85, 168, 255, 0.24),
+        rgba(36, 228, 208, 0.12)
+    ) !important;
+
+    border-color: rgba(85, 168, 255, 0.38);
+
+    box-shadow:
+        inset 3px 0 #55a8ff,
+        0 0 22px rgba(85, 168, 255, 0.08);
+}
+
+/* =========================
+   CUSTOMER SIDEBAR ACTIVE STATE
+========================= */
+
+.app-role-customer .app-sidebar button[aria-current="page"],
+.app-role-customer .app-sidebar button.active {
+    background: linear-gradient(
+        110deg,
+        rgba(167, 139, 250, 0.25),
+        rgba(56, 217, 207, 0.12)
+    ) !important;
+
+    border-color: rgba(167, 139, 250, 0.38);
+
+    box-shadow:
+        inset 3px 0 #a78bfa,
+        0 0 22px rgba(167, 139, 250, 0.08);
+}
+
+/* =========================
+   ROLE SIDEBAR HOVER
+========================= */
+
+.app-role-agent .app-sidebar button:hover {
+    border-color: rgba(85, 168, 255, 0.24);
+}
+
+.app-role-customer .app-sidebar button:hover {
+    border-color: rgba(167, 139, 250, 0.24);
+}
+
+/* =========================
+   RESPONSIVE DASHBOARD
+========================= */
+
+@media (max-width: 1024px) {
+    .app-sidebar {
+        width: 220px;
+    }
+
+    .dashboard-hero.role-hero {
+        gap: 18px;
+    }
+
+    .hero-side-note {
+        min-width: 200px;
+    }
+}
+
+/* =========================
+   TABLET RESPONSIVE
+========================= */
+
+@media (max-width: 900px) {
+    .dashboard-hero.role-hero {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .hero-side-note {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .dashboard-insight-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 768px) {
+    .app-shell {
+        background-attachment: scroll;
+    }
+
+    .dashboard-stat-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .app-sidebar {
+        width: 76px !important;
+    }
+
+    .app-sidebar .sidebar-label,
+    .app-sidebar .brand-description,
+    .app-sidebar .user-details {
+        display: none;
+    }
+
+    .app-sidebar button {
+        justify-content: center;
+        padding-left: 12px !important;
+        padding-right: 12px !important;
+    }
+
+    .app-header {
+        padding: 16px !important;
+    }
+
+    .app-content {
+        padding: 16px !important;
+    }
+
+    .glass-card {
+        border-radius: 14px;
+    }
+
+    .dashboard-hero {
+        padding: 24px;
+    }
+}
+
+/* =========================
+   MOBILE RESPONSIVE
+========================= */
+
+@media (max-width: 480px) {
+    .dashboard-stat-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .dashboard-hero.role-hero {
+        padding: 20px;
+    }
+
+    .dashboard-hero h2 {
+        font-size: 1.7rem;
+    }
+
+    .app-sidebar {
+        width: 64px !important;
+    }
+
+    .app-header h2 {
+        font-size: 19px;
+    }
+
+    .hero-side-note {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .create-ticket-modal {
+        max-height: 94vh;
+        border-radius: 14px;
+    }
+
+    .glass-table {
+        min-width: 650px;
+    }
+}
+
+/* =========================
+   REDUCED MOTION
+========================= */
+
+@media (prefers-reduced-motion: reduce) {
+    .dashboard-stat-grid .role-stat-card {
+        transition: none;
+    }
+
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* =========================
+   FINAL SAFETY / COMPATIBILITY
+========================= */
+
+.app-main {
+    min-width: 0;
+}
+
+.app-content {
+    min-width: 0;
+}
+
+.dashboard-ticket-panel {
+    min-width: 0;
+    overflow: hidden;
+}
+
+.dashboard-ticket-panel > div {
+    max-width: 100%;
+}
+
+.glass-table {
+    border-spacing: 0;
+}
+
+.glass-table tbody tr {
+    transition: background 0.2s ease;
+}
+
+/* Keep light modal readable */
+
+.create-ticket-modal {
+    isolation: isolate;
+}
+
+/* Prevent decorative backgrounds from blocking clicks */
+
+.app-shell::before,
+.app-shell::after,
+.hero-orb {
+    pointer-events: none;
+}
+
+/* NEXORA LOGOUT CONFIRMATION POPUP */
+
+.logout-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 99999 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 20px;
+    background: rgba(2, 8, 23, 0.78) !important;
+    backdrop-filter: blur(6px);
+}
+
+.logout-modal {
+    width: 100%;
+    max-width: 430px;
+    padding: 30px;
+    border-radius: 18px;
+    text-align: center;
+    color: #f8fafc;
+    background: #0c1b31;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.65);
+    animation: logoutPopup 0.2s ease-out;
+}
+
+.logout-modal-icon {
+    width: 58px;
+    height: 58px;
+    margin: 0 auto 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 15px;
+    color: #fb7185;
+    background: rgba(244, 63, 94, 0.13);
+}
+
+.logout-modal h2 {
+    margin: 0 0 10px;
+    font-size: 23px;
+    font-weight: 700;
+}
+
+.logout-modal p {
+    margin: 0 0 25px;
+    color: #a8b6cc;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+.logout-modal-actions {
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+.logout-modal-actions button {
+    flex: 1;
+    padding: 12px 18px;
+    border-radius: 9px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.logout-cancel-btn {
+    color: #e2e8f0;
+    background: #26364f;
+    border: 1px solid #40516b;
+}
+
+.logout-cancel-btn:hover {
+    background: #344762;
+}
+
+.logout-confirm-btn {
+    color: white;
+    background: #e04455;
+    border: 1px solid #e04455;
+}
+
+.logout-confirm-btn:hover {
+    background: #c52e40;
+}
+
+@keyframes logoutPopup {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
     }
 }

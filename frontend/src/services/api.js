@@ -83,6 +83,43 @@ export const getActivities = (ticketId) =>
 
 
 // =====================================
+// FILE ATTACHMENTS
+// =====================================
+
+// Upload multiple attachments to a ticket
+export const uploadAttachments = (ticketId, files) => {
+    const formData = new FormData();
+
+    Array.from(files).forEach((file) => {
+        formData.append("attachments", file);
+    });
+
+    return API.post(
+        `/attachments/tickets/${ticketId}`,
+        formData,
+        {
+            headers: {
+                "Content-Type": undefined
+            }
+        }
+    );
+};
+
+// Get all attachments for a ticket
+export const getTicketAttachments = (ticketId) =>
+    API.get(`/attachments/tickets/${ticketId}`);
+export const downloadAttachment = (ticketId, attachmentId) =>
+    API.get(
+        `/attachments/tickets/${ticketId}/${attachmentId}/download`,
+        {
+            responseType: "blob"
+        }
+    );
+// Download a particular attachment
+
+
+
+// =====================================
 // AGENT MANAGEMENT (ADMIN ONLY)
 // =====================================
 
